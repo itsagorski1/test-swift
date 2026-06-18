@@ -18,7 +18,11 @@ extension SKColor {
     }
 }
 
+<<<<<<< HEAD
 class GameScene: SKScene, NSTextFieldDelegate {
+=======
+class GameScene: SKScene {
+>>>>>>> 4907321052d86f69de6e22511c449be1aa755390
     
     var entities = [GKEntity]()
     var graphs = [String : GKGraph]()
@@ -101,8 +105,20 @@ class GameScene: SKScene, NSTextFieldDelegate {
             label.run(SKAction.fadeIn(withDuration: 2.0))
         }
         
+<<<<<<< HEAD
         // Render your master template at starting defaults
         redrawLine()
+=======
+        // Create shape node to use during mouse interaction
+        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: 500, height: 1), cornerRadius: 0)
+        
+        if let spinnyNode = self.spinnyNode {
+            spinnyNode.lineWidth = 2.5
+            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
+                                              SKAction.fadeOut(withDuration: 0.5),
+                                              SKAction.removeFromParent()]))
+        }
+>>>>>>> 4907321052d86f69de6e22511c449be1aa755390
     }
     
     // 4. Clean click actions that cleanly fade out individual clones
@@ -110,7 +126,10 @@ class GameScene: SKScene, NSTextFieldDelegate {
         if let n = self.lineNode?.copy() as? SKShapeNode {
             n.position = pos
             n.strokeColor = SKColor(hex: 0x0000ff)
+<<<<<<< HEAD
             n.fillColor = SKColor(hex: 0x0000ff)
+=======
+>>>>>>> 4907321052d86f69de6e22511c449be1aa755390
             self.addChild(n)
             
             // Fade and destroy the clone instance, keeping your template intact
@@ -119,6 +138,7 @@ class GameScene: SKScene, NSTextFieldDelegate {
     }
     
     func touchMoved(toPoint pos : CGPoint) {
+<<<<<<< HEAD
         if let n = self.lineNode?.copy() as? SKShapeNode {
             n.position = pos
             n.strokeColor = SKColor.blue
@@ -130,6 +150,14 @@ class GameScene: SKScene, NSTextFieldDelegate {
                 SKAction.fadeOut(withDuration: 0.5),
                 SKAction.removeFromParent()
             ]))
+=======
+        for _ in 1...10 {
+            if let n = self.spinnyNode?.copy() as! SKShapeNode? {
+                n.position = pos
+                n.strokeColor = SKColor.blue
+                self.addChild(n)
+            }
+>>>>>>> 4907321052d86f69de6e22511c449be1aa755390
         }
     }
     
@@ -158,9 +186,16 @@ class GameScene: SKScene, NSTextFieldDelegate {
     
     override func keyDown(with event: NSEvent) {
         let mouseLocation = CGPoint(x: self.frame.midX, y: self.frame.midY)
+<<<<<<< HEAD
         touchDown(atPoint: mouseLocation)
         touchUp(atPoint: mouseLocation)
         
+=======
+        for _ in 1...10 {
+            touchDown(atPoint: mouseLocation)
+            touchUp(atPoint: mouseLocation)
+        }
+>>>>>>> 4907321052d86f69de6e22511c449be1aa755390
         switch event.keyCode {
         case 0x33:
             self.lineNode?.removeFromParent()
