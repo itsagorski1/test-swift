@@ -29,13 +29,13 @@ class GameScene: SKScene, NSTextFieldDelegate {
     
     let width = NSTextField()
     var width4rl = 50 // Default width to 50 so it's visible right away
-        
-    override func didMove(to view: SKView) {
-        setupLengthInput(in: view)
-    }
+    
+    // --- SELECTION & DRAG TRACKING VARIABLES ---
+    private var selectedNode: SKShapeNode? = nil
+    private var isDragging = false
     
     func setupLengthInput(in view: SKView) {
-        width.frame = CGRect(x: 20, y: 20, width: 80, height: 25)
+        width.frame = CGRect(x: 20, y: 60, width: 80, height: 25) // Shifted up slightly to prevent layout overlapping button1
         width.placeholderString = "Length"
         width.font = NSFont.systemFont(ofSize: 13)
         width.alignment = .center
@@ -47,6 +47,8 @@ class GameScene: SKScene, NSTextFieldDelegate {
     
     override func willMove(from view: SKView) {
         width.removeFromSuperview()
+        button1.removeFromSuperview()
+        button2.removeFromSuperview()
     }
     
     // 1. Force the Mac window to drop focus when you hit Return/Enter
@@ -108,18 +110,17 @@ class GameScene: SKScene, NSTextFieldDelegate {
     // 4. Clean click actions that cleanly fade out individual clones
     func touchDown(atPoint pos : CGPoint) {
         if let n = self.lineNode?.copy() as? SKShapeNode {
+            n.name = "clone" // Unique marker name so we can filter and select it later
             n.position = pos
             n.strokeColor = SKColor(hex: 0x0000ff)
             n.fillColor = SKColor(hex: 0x0000ff)
             self.addChild(n)
-            
-            // Fade and destroy the clone instance, keeping your template intact
-            n.run(SKAction.sequence([]))
         }
     }
     
     func touchMoved(toPoint pos : CGPoint) {
         if let n = self.lineNode?.copy() as? SKShapeNode {
+            n.name = "clone"
             n.position = pos
             n.strokeColor = SKColor.blue
             n.fillColor = SKColor.blue
@@ -135,6 +136,7 @@ class GameScene: SKScene, NSTextFieldDelegate {
     
     func touchUp(atPoint pos : CGPoint) {
         if let n = self.lineNode?.copy() as? SKShapeNode {
+            n.name = "clone"
             n.position = pos
             n.strokeColor = SKColor.red
             n.fillColor = SKColor.red
@@ -148,24 +150,79 @@ class GameScene: SKScene, NSTextFieldDelegate {
         }
     }
     
+    // --- UPDATED MOUSE ACTIONS ---
     override func mouseDown(with event: NSEvent) {
-        self.touchDown(atPoint: event.location(in: self))
+        let location = event.location(in: self)
+        
+        if button1.state == .on {
+            // Create Mode behavior
+            self.touchDown(atPoint: location)
+        }
+        else if button2.state == .on {
+            // Select Mode behavior
+            let clickedNodes = self.nodes(at: location)
+            
+            // Look for the first node that is a clone shape
+            if let targetNode = clickedNodes.first(where: { $0.name == "clone" }) as? SKShapeNode {
+                
+                // Clear out highlight colors on any previously selected item
+                if let oldSelection = selectedNode, oldSelection != targetNode {
+                    oldSelection.strokeColor = SKColor(hex: 0x0000ff)
+                }
+                
+                selectedNode = targetNode
+                isDragging = true
+                
+                // Turn selection orange to show visual feedback
+                selectedNode?.strokeColor = SKColor.orange
+            } else {
+                // Clicking empty screen space clears current choice selection
+                selectedNode?.strokeColor = SKColor(hex: 0x0000ff)
+                selectedNode = nil
+                isDragging = false
+            }
+        }
+    }
+    
+    override func mouseDragged(with event: NSEvent) {
+        let location = event.location(in: self)
+        
+        if button1.state == .on {
+            self.touchMoved(toPoint: location)
+        }
+        else if button2.state == .on && isDragging {
+            // Drag the chosen block dynamically across the coordinates
+            selectedNode?.position = location
+        }
     }
     
     override func mouseUp(with event: NSEvent) {
-        self.touchUp(atPoint: event.location(in: self))
+        let location = event.location(in: self)
+        
+        if button1.state == .on {
+            self.touchUp(atPoint: location)
+        }
+        else if button2.state == .on {
+            isDragging = false
+        }
     }
     
     override func keyDown(with event: NSEvent) {
-        let mouseLocation = CGPoint(x: self.frame.midX, y: self.frame.midY)
-        touchDown(atPoint: mouseLocation)
-        touchUp(atPoint: mouseLocation)
-        
         switch event.keyCode {
-        case 0x33:
-            self.lineNode?.removeFromParent()
+        case 0x33: // Delete/Backspace Key
+            if button2.state == .on, let nodeToDelete = selectedNode {
+                nodeToDelete.removeFromParent()
+                selectedNode = nil // Clear tracking memory reference
+                print("Selected clone item deleted.")
+            } else {
+                // Default fallback: removes master line node template
+                self.lineNode?.removeFromParent()
+            }
         default:
-            break
+            // Optional legacy key placement generator logic
+            let mouseLocation = CGPoint(x: self.frame.midX, y: self.frame.midY)
+            touchDown(atPoint: mouseLocation)
+            touchUp(atPoint: mouseLocation)
         }
     }
     
@@ -182,4 +239,51 @@ class GameScene: SKScene, NSTextFieldDelegate {
         
         self.lastUpdateTime = currentTime
     }
+    
+    var button1 = NSButton()
+    var button2 = NSButton()
+    
+    override func didMove(to view: SKView) {
+        setupLengthInput(in: view) // Call your textfield setup routine here!
+        
+        // 1. Create Button 1 (Starts Active/Latched)
+        button1 = NSButton(title: "Create", target: self, action: #selector(buttonGroupTapped(_:)))
+        button1.setButtonType(.pushOnPushOff)
+        button1.bezelStyle = .rounded
+        button1.state = .on
+        
+        // 2. Create Button 2 (Starts Inactive/Unlatched)
+        button2 = NSButton(title: "Select", target: self, action: #selector(buttonGroupTapped(_:)))
+        button2.setButtonType(.pushOnPushOff)
+        button2.bezelStyle = .rounded
+        button2.state = .off
+        
+        // 3. Add them to the SpriteKit View
+        if let skView = self.view {
+            button1.frame = CGRect(x: 20, y: 20, width: 120, height: 32)
+            button2.frame = CGRect(x: 150, y: 20, width: 120, height: 32)
+            
+            skView.addSubview(button1)
+            skView.addSubview(button2)
+        }
+    }
+    
+    // 4. Handle the Radio/Latch Logic Manually
+    @objc func buttonGroupTapped(_ sender: NSButton) {
+        sender.state = .on
+        
+        if sender == button1 {
+            button2.state = .off
+            modeCreate()
+        } else if sender == button2 {
+            button1.state = .off
+            modeSelect()
+        }
+    }
+    
+    func modeCreate() {
+        print("Create mode")
+        // Reset selected highlight color state if switching back out to build toolsselectedNode?.strokeColor = SKColor(hex: 0x0000ff)selectedNode = nil
+    }
+    func modeSelect() { print("Select mode") }
 }
