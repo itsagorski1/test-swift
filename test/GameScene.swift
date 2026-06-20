@@ -28,14 +28,18 @@ class GameScene: SKScene, NSTextFieldDelegate {
     private var lineNode : SKShapeNode?
     
     let width = NSTextField()
+    let boxLengthField = NSTextField()
+    let boxHeightField = NSTextField()
     var width4rl = 50 // Default width to 50 so it's visible right away
+    var boxLength = 80
+    var boxHeight = 50
     
     // --- SELECTION & DRAG TRACKING VARIABLES ---
     private var selectedNode: SKShapeNode? = nil
     private var isDragging = false
     
     func setupLengthInput(in view: SKView) {
-        width.frame = CGRect(x: 20, y: 60, width: 80, height: 25) // Shifted up slightly to prevent layout overlapping button1
+        width.frame = CGRect(x: 20, y: 60, width: 80, height: 25)
         width.placeholderString = "Length"
         width.font = NSFont.systemFont(ofSize: 13)
         width.alignment = .center
@@ -45,14 +49,39 @@ class GameScene: SKScene, NSTextFieldDelegate {
         view.addSubview(width)
     }
     
+    func setupBoxInputs(in view: SKView) {
+        boxLengthField.frame = CGRect(x: 110, y: 60, width: 100, height: 25)
+        boxLengthField.placeholderString = "Box width"
+        boxLengthField.font = NSFont.systemFont(ofSize: 13)
+        boxLengthField.alignment = .center
+        boxLengthField.isBezeled = true
+        boxLengthField.bezelStyle = .roundedBezel
+        boxLengthField.delegate = self
+        boxLengthField.isHidden = true
+        view.addSubview(boxLengthField)
+        
+        boxHeightField.frame = CGRect(x: 220, y: 60, width: 100, height: 25)
+        boxHeightField.placeholderString = "Box height"
+        boxHeightField.font = NSFont.systemFont(ofSize: 13)
+        boxHeightField.alignment = .center
+        boxHeightField.isBezeled = true
+        boxHeightField.bezelStyle = .roundedBezel
+        boxHeightField.delegate = self
+        boxHeightField.isHidden = true
+        view.addSubview(boxHeightField)
+    }
+    
     override func willMove(from view: SKView) {
         width.removeFromSuperview()
+        boxLengthField.removeFromSuperview()
+        boxHeightField.removeFromSuperview()
         button1.removeFromSuperview()
         button2.removeFromSuperview()
+        button3.removeFromSuperview()
     }
     
     // 1. Force the Mac window to drop focus when you hit Return/Enter
-    func control(_ control: NSControl, textView: NSText, doCommandBy commandSelector: Selector) -> Bool {
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         if commandSelector == #selector(NSResponder.insertNewline(_:)) {
             self.view?.window?.makeFirstResponder(self.view)
             return true
@@ -60,19 +89,27 @@ class GameScene: SKScene, NSTextFieldDelegate {
         return false
     }
     
-    // 2. This updates your internal number value and recreates the shape geometry
+    // 2. This updates your numeric values after the user finishes editing a field.
     func controlTextDidEndEditing(_ obj: Notification) {
         guard let textField = obj.object as? NSTextField else { return }
-        
-        if let value = Int(textField.stringValue) {
-            self.width4rl = value
-            if textField === width {
-                print("Width updated to: \(value)")
-                redrawLine()
-            }
-        } else {
+        guard let value = Int(textField.stringValue) else {
             print("Please enter a valid whole number.")
+            textField.stringValue = ""
+            return
         }
+        
+        if textField === width {
+            width4rl = value
+            print("Width updated to: \(value)")
+            redrawLine()
+        } else if textField === boxLengthField {
+            boxLength = value
+            print("Box width updated to: \(value)")
+        } else if textField === boxHeightField {
+            boxHeight = value
+            print("Box height updated to: \(value)")
+        }
+        
         textField.stringValue = ""
     }
     
@@ -125,12 +162,6 @@ class GameScene: SKScene, NSTextFieldDelegate {
             n.strokeColor = SKColor.blue
             n.fillColor = SKColor.blue
             self.addChild(n)
-            
-            n.run(SKAction.sequence([
-                SKAction.wait(forDuration: 0.5),
-                SKAction.fadeOut(withDuration: 0.5),
-                SKAction.removeFromParent()
-            ]))
         }
     }
     
@@ -141,13 +172,32 @@ class GameScene: SKScene, NSTextFieldDelegate {
             n.strokeColor = SKColor.red
             n.fillColor = SKColor.red
             self.addChild(n)
-            
-            n.run(SKAction.sequence([
-                SKAction.wait(forDuration: 0.5),
-                SKAction.fadeOut(withDuration: 0.5),
-                SKAction.removeFromParent()
-            ]))
         }
+    }
+    
+    func createBox(at position: CGPoint) {
+        let outerWidth = CGFloat(boxLength)
+        let outerHeight = CGFloat(boxHeight)
+        let inset: CGFloat = 4
+        
+        let outerBox = SKShapeNode(rectOf: CGSize(width: outerWidth, height: outerHeight))
+        outerBox.name = "clone"
+        outerBox.position = position
+        outerBox.lineWidth = 2.5
+        outerBox.fillColor = SKColor.white
+        outerBox.strokeColor = SKColor.white
+        
+        let innerSize = CGSize(
+            width: max(outerWidth - inset * 2, 1),
+            height: max(outerHeight - inset * 2, 1)
+        )
+        let innerBox = SKShapeNode(rectOf: innerSize)
+        innerBox.fillColor = SKColor.black
+        innerBox.strokeColor = SKColor.black
+        innerBox.lineWidth = 0
+        
+        outerBox.addChild(innerBox)
+        self.addChild(outerBox)
     }
     
     // --- UPDATED MOUSE ACTIONS ---
@@ -181,6 +231,8 @@ class GameScene: SKScene, NSTextFieldDelegate {
                 selectedNode = nil
                 isDragging = false
             }
+        } else if button3.state == .on {
+            createBox(at: location)
         }
     }
     
@@ -215,8 +267,8 @@ class GameScene: SKScene, NSTextFieldDelegate {
                 selectedNode = nil // Clear tracking memory reference
                 print("Selected clone item deleted.")
             } else {
-                // Default fallback: removes master line node template
-                self.lineNode?.removeFromParent()
+                // Default fallback: do nothing
+                break
             }
         default:
             // Optional legacy key placement generator logic
@@ -242,9 +294,11 @@ class GameScene: SKScene, NSTextFieldDelegate {
     
     var button1 = NSButton()
     var button2 = NSButton()
+    var button3 = NSButton()
     
     override func didMove(to view: SKView) {
-        setupLengthInput(in: view) // Call your textfield setup routine here!
+        setupLengthInput(in: view)
+        setupBoxInputs(in: view)
         
         // 1. Create Button 1 (Starts Active/Latched)
         button1 = NSButton(title: "Create", target: self, action: #selector(buttonGroupTapped(_:)))
@@ -258,13 +312,20 @@ class GameScene: SKScene, NSTextFieldDelegate {
         button2.bezelStyle = .rounded
         button2.state = .off
         
+        button3 = NSButton(title: "Box", target: self, action: #selector(buttonGroupTapped(_:)))
+        button3.setButtonType(.pushOnPushOff)
+        button3.bezelStyle = .rounded
+        button3.state = .off
+        
         // 3. Add them to the SpriteKit View
         if let skView = self.view {
             button1.frame = CGRect(x: 20, y: 20, width: 120, height: 32)
             button2.frame = CGRect(x: 150, y: 20, width: 120, height: 32)
+            button3.frame = CGRect(x: 280, y: 20, width: 120, height: 32)
             
             skView.addSubview(button1)
             skView.addSubview(button2)
+            skView.addSubview(button3)
         }
     }
     
@@ -274,16 +335,43 @@ class GameScene: SKScene, NSTextFieldDelegate {
         
         if sender == button1 {
             button2.state = .off
+            button3.state = .off
             modeCreate()
         } else if sender == button2 {
             button1.state = .off
+            button3.state = .off
             modeSelect()
+        } else if sender == button3 {
+            button1.state = .off
+            button2.state = .off
+            modeBox()
         }
     }
     
     func modeCreate() {
         print("Create mode")
-        // Reset selected highlight color state if switching back out to build toolsselectedNode?.strokeColor = SKColor(hex: 0x0000ff)selectedNode = nil
+        width.isHidden = false
+        boxLengthField.isHidden = true
+        boxHeightField.isHidden = true
+        selectedNode?.strokeColor = SKColor(hex: 0x0000ff)
+        selectedNode = nil
+        isDragging = false
     }
-    func modeSelect() { print("Select mode") }
+    
+    func modeSelect() {
+        print("Select mode")
+        width.isHidden = true
+        boxLengthField.isHidden = true
+        boxHeightField.isHidden = true
+    }
+    
+    func modeBox() {
+        print("Box-create mode")
+        width.isHidden = true
+        boxLengthField.isHidden = false
+        boxHeightField.isHidden = false
+        selectedNode?.strokeColor = SKColor(hex: 0x0000ff)
+        selectedNode = nil
+        isDragging = false
+    }
 }
