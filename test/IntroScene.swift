@@ -31,7 +31,7 @@ class IntroScene: SKScene {
         
         // 2. Define an animated transition style (e.g., crossfade)
         let transition = SKTransition.crossFade(withDuration: 1.0)
-        
+        //hi
         // 3. Command the view to swap scenes safely
         var linkClicked = false
         let location = event.location(in: self)
