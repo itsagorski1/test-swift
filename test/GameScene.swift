@@ -155,16 +155,6 @@ class GameScene: SKScene, NSTextFieldDelegate {
         }
     }
     
-    func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.lineNode?.copy() as? SKShapeNode {
-            n.name = "clone"
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            n.fillColor = SKColor.blue
-            self.addChild(n)
-        }
-    }
-    
     func touchUp(atPoint pos : CGPoint) {
         if let n = self.lineNode?.copy() as? SKShapeNode {
             n.name = "clone"
@@ -240,7 +230,7 @@ class GameScene: SKScene, NSTextFieldDelegate {
         let location = event.location(in: self)
         
         if button1.state == .on {
-            self.touchMoved(toPoint: location)
+            //self.touchMoved(toPoint: location)
         }
         else if button2.state == .on && isDragging {
             // Drag the chosen block dynamically across the coordinates

@@ -27,14 +27,26 @@ class IntroScene: SKScene {
         // 1. Create the incoming game scene instance
         let targetSize = self.size // Match the current window size
         let incomingScene = GameScene(size: targetSize)
-        incomingScene.scaleMode = .aspectFill
+        incomingScene.scaleMode = .resizeFill
         
         // 2. Define an animated transition style (e.g., crossfade)
         let transition = SKTransition.crossFade(withDuration: 1.0)
         
         // 3. Command the view to swap scenes safely
         var linkClicked = false
-        if (true) {}
+        let location = event.location(in: self)
+        let coords = ((CGFloat(self.frame.midX - 252),CGFloat(self.frame.midY + 16)),(CGFloat(self.frame.midX + 252),CGFloat(self.frame.midY + 48)))
+        print("Mouse Clicked At: X=\(location.x), Y=\(location.y)")
+        print("Valid Hitbox Box: X ranges from \(coords.0.0) to \(coords.1.0)")
+        print("Valid Hitbox Box: Y ranges from \(coords.0.1) to \(coords.1.1)")
+        if ((location.x >= coords.0.0) && (location.x <= coords.1.0)) && ((location.y >= coords.0.1) && (location.y <= coords.1.1)) {
+            print("link k")
+            linkClicked = true
+            if let url = URL(string: "https://github.com/itsagorski1/test-swift") {
+                print("link clicked")
+                NSWorkspace.shared.open(url)
+            }
+        }
         if let skView = self.view {
             if !linkClicked {
                 print("Deactivating IntroScene... Presenting GameScene.")
