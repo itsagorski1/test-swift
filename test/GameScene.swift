@@ -27,10 +27,12 @@ class GameScene: SKScene, NSTextFieldDelegate {
     private var label : SKLabelNode?
     private var lineNode : SKShapeNode?
     
-    let width = NSTextField()
+    let widthField = NSTextField()
     let boxLengthField = NSTextField()
     let boxHeightField = NSTextField()
-    var width4rl = 50 // Default width to 50 so it's visible right away
+    let textField = NSTextField()
+    var text = ""
+    var width = 50 // Default width to 50 so it's visible right away
     var boxLength = 80
     var boxHeight = 50
     
@@ -39,14 +41,14 @@ class GameScene: SKScene, NSTextFieldDelegate {
     private var isDragging = false
     
     func setupLengthInput(in view: SKView) {
-        width.frame = CGRect(x: 20, y: 60, width: 80, height: 25)
-        width.placeholderString = "Length"
-        width.font = NSFont.systemFont(ofSize: 13)
-        width.alignment = .center
-        width.isBezeled = true
-        width.bezelStyle = .roundedBezel
-        width.delegate = self
-        view.addSubview(width)
+        widthField.frame = CGRect(x: 20, y: 60, width: 80, height: 25)
+        widthField.placeholderString = "Length"
+        widthField.font = NSFont.systemFont(ofSize: 13)
+        widthField.alignment = .center
+        widthField.isBezeled = true
+        widthField.bezelStyle = .roundedBezel
+        widthField.delegate = self
+        view.addSubview(widthField)
     }
     
     func setupBoxInputs(in view: SKView) {
@@ -72,12 +74,23 @@ class GameScene: SKScene, NSTextFieldDelegate {
     }
     
     override func willMove(from view: SKView) {
-        width.removeFromSuperview()
+        widthField.removeFromSuperview()
         boxLengthField.removeFromSuperview()
         boxHeightField.removeFromSuperview()
         button1.removeFromSuperview()
         button2.removeFromSuperview()
         button3.removeFromSuperview()
+    }
+    func setupTextField(in view: SKView) {
+        let pos = event.location(in: self)
+        textField.frame = CGRect(x: pos.x, y: pos.y, width: 80, height: 25)
+        textField.placeholderString = "Length"
+        textField.font = NSFont.systemFont(ofSize: 13)
+        textField.alignment = .center
+        textField.isBezeled = true
+        textField.bezelStyle = .roundedBezel
+        textField.delegate = self
+        view.addSubview(textField)
     }
     
     // 1. Force the Mac window to drop focus when you hit Return/Enter
@@ -92,14 +105,15 @@ class GameScene: SKScene, NSTextFieldDelegate {
     // 2. This updates your numeric values after the user finishes editing a field.
     func controlTextDidEndEditing(_ obj: Notification) {
         guard let textField = obj.object as? NSTextField else { return }
+        if textField === self.textField { text = textField.stringValue; print("text made") }
         guard let value = Int(textField.stringValue) else {
             print("Please enter a valid whole number.")
             textField.stringValue = ""
             return
         }
         
-        if textField === width {
-            width4rl = value
+        if textField === widthField {
+            width = value
             print("Width updated to: \(value)")
             redrawLine()
         } else if textField === boxLengthField {
@@ -123,7 +137,7 @@ class GameScene: SKScene, NSTextFieldDelegate {
         }
         
         // Build a fresh visible bounding rectangle path using your custom input width
-        let rectPath = CGPath(rect: CGRect(x: CGFloat(-self.width4rl / 2), y: -10, width: CGFloat(self.width4rl), height: 20), transform: nil)
+        let rectPath = CGPath(rect: CGRect(x: CGFloat(-self.width / 2), y: -10, width: CGFloat(self.width), height: 20), transform: nil)
         
         self.lineNode?.path = rectPath
         self.lineNode?.lineWidth = 2.5
@@ -326,42 +340,42 @@ class GameScene: SKScene, NSTextFieldDelegate {
         if sender == button1 {
             button2.state = .off
             button3.state = .off
-            modeCreate()
+            mode(mode: "c")
         } else if sender == button2 {
             button1.state = .off
             button3.state = .off
-            modeSelect()
+            mode(mode: "s")
         } else if sender == button3 {
             button1.state = .off
             button2.state = .off
-            modeBox()
+            mode(mode: "b")
         }
     }
-    
-    func modeCreate() {
-        print("Create mode")
-        width.isHidden = false
-        boxLengthField.isHidden = true
-        boxHeightField.isHidden = true
-        selectedNode?.strokeColor = SKColor(hex: 0x0000ff)
-        selectedNode = nil
-        isDragging = false
+    func mode(mode : String!) {
+        if mode == "b" {
+            print("Box-create mode")
+            widthField.isHidden = true
+            boxLengthField.isHidden = false
+            boxHeightField.isHidden = false
+            selectedNode?.strokeColor = SKColor(hex: 0x0000ff)
+            selectedNode = nil
+            isDragging = false
+        } else if mode == "s" {
+            print("select mode")
+            widthField.isHidden = true
+            boxLengthField.isHidden = true
+            boxHeightField.isHidden = true
+        } else if mode == "c" {
+            print("create mode")
+            widthField.isHidden = false
+            boxHeightField.isHidden = true
+            boxLengthField.isHidden = true
+            selectedNode?.strokeColor = SKColor(hex: 0x0000ff)
+            selectedNode = nil
+            isDragging = false
+        }
     }
-    
-    func modeSelect() {
-        print("Select mode")
-        width.isHidden = true
-        boxLengthField.isHidden = true
-        boxHeightField.isHidden = true
-    }
-    
-    func modeBox() {
-        print("Box-create mode")
-        width.isHidden = true
-        boxLengthField.isHidden = false
-        boxHeightField.isHidden = false
-        selectedNode?.strokeColor = SKColor(hex: 0x0000ff)
-        selectedNode = nil
-        isDragging = false
+    func addText(in view: SKView, with event: NSEvent) {
+        
     }
 }
