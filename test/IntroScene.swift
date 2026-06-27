@@ -2,23 +2,19 @@ import SpriteKit
 
 class IntroScene: SKScene {
     var creditsButton = NSButton()
+
+    override func willMove(from view: SKView) {
+        creditsButton.removeFromSuperview()
+    }
+
     override func didMove(to view: SKView) {
         // Build an intro title label
         let startLabel = SKLabelNode(text: "The Mainframe")
-        let githubStart = SKLabelNode(text: "Github:")
-        let githubLink = SKLabelNode(text: "https://github.com/itsagorski1/test-swift")
-        startLabel.position = CGPoint(x: self.frame.midX, y: (self.frame.midY + 52))
+        startLabel.position = CGPoint(x: self.frame.midX, y: self.frame.midY)
         startLabel.fontColor = .white
         startLabel.fontSize = 100
+        startLabel.fontName = "Helvetica-Bold"
         self.addChild(startLabel)
-        githubStart.position = CGPoint(x: self.frame.midX, y: self.frame.midY)
-        githubStart.fontColor = .white
-        githubStart.fontSize = 32
-        self.addChild(githubStart)
-        githubLink.position = CGPoint(x: self.frame.midX, y: (self.frame.midY - 42) )
-        githubLink.fontColor = SKColor(red: 15/255.0, green: 15/255.0, blue: 229/255.0, alpha: 1.0)
-        startLabel.fontSize = 32
-        self.addChild(githubLink)
         creditsButton = NSButton(title: "Credits", target: self, action: #selector(buttonGroupTapped(_:)))
         creditsButton.setButtonType(.momentaryPushIn)
         creditsButton.bezelStyle = .rounded
@@ -49,7 +45,7 @@ class IntroScene: SKScene {
     @objc func buttonGroupTapped(_ sender: NSButton) {
         print("clicked")
         let targetSize = self.size // Match the current window size
-        let incomingScene = CreditScene(size: targetSize)
+        let incomingScene = CreditsScene(size: targetSize)
         incomingScene.scaleMode = .resizeFill
         
         // 2. Define an animated transition style (e.g., crossfade)
