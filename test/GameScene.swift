@@ -81,8 +81,7 @@ class GameScene: SKScene, NSTextFieldDelegate {
         button2.removeFromSuperview()
         button3.removeFromSuperview()
     }
-    func setupTextField(in view: SKView) {
-        let pos = event.location(in: self)
+    func setupTextField(in view: SKView, at pos: CGPoint) {
         textField.frame = CGRect(x: pos.x, y: pos.y, width: 80, height: 25)
         textField.placeholderString = "Length"
         textField.font = NSFont.systemFont(ofSize: 13)
