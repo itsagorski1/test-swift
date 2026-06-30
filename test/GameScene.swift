@@ -53,10 +53,10 @@ enum ComponentType: String {
 
     var size: CGSize {
         switch self {
-        case .networker: return CGSize(width: 150, height: 76)
-        case .computer: return CGSize(width: 240, height: 86)
-        case .printerScannerCopier: return CGSize(width: 220, height: 86)
-        case .screen: return CGSize(width: 170, height: 96)
+        case .networker: return CGSize(width: 160, height: 96)
+        case .computer: return CGSize(width: 256, height: 96)
+        case .printerScannerCopier: return CGSize(width: 224, height: 96)
+        case .screen: return CGSize(width: 192, height: 128)
         }
     }
 
@@ -269,6 +269,20 @@ class GameScene: SKScene, NSTextFieldDelegate {
             y: round(position.y / gridSize) * gridSize
         )
     }
+
+    func snapComponentPosition(_ position: CGPoint, size: CGSize) -> CGPoint {
+        CGPoint(
+            x: round((position.x - size.width / 2) / gridSize) * gridSize + size.width / 2,
+            y: round((position.y - size.height / 2) / gridSize) * gridSize + size.height / 2
+        )
+    }
+
+    func snapComponentPosition(_ position: CGPoint, for component: SKShapeNode) -> CGPoint {
+        guard let type = componentType(for: component) else {
+            return snapToGrid(position)
+        }
+        return snapComponentPosition(position, size: type.size)
+    }
     
     // 4. Clean click actions that cleanly fade out individual clones
     func touchDown(atPoint pos : CGPoint) {
@@ -282,7 +296,7 @@ class GameScene: SKScene, NSTextFieldDelegate {
     func createComponent(_ type: ComponentType, at position: CGPoint) {
         let component = SKShapeNode(rectOf: type.size, cornerRadius: 8)
         component.name = "clone"
-        component.position = snapToGrid(position)
+        component.position = snapComponentPosition(position, size: type.size)
         component.lineWidth = 3
         component.fillColor = type.fillColor
         component.strokeColor = type.strokeColor
@@ -454,9 +468,64 @@ class GameScene: SKScene, NSTextFieldDelegate {
 
     func updateWire(_ connection: WireConnection) {
         let path = CGMutablePath()
-        path.move(to: connection.from.position)
-        path.addLine(to: connection.to.position)
+        let points = shortestGridWirePath(from: connection.from, to: connection.to)
+        guard let firstPoint = points.first else { return }
+        path.move(to: firstPoint)
+        for point in points.dropFirst() {
+            path.addLine(to: point)
+        }
         connection.node.path = path
+    }
+
+    func shortestGridWirePath(from first: SKShapeNode, to second: SKShapeNode) -> [CGPoint] {
+        let start = wirePort(from: first, toward: second)
+        let end = wirePort(from: second, toward: first)
+        let horizontalFirst = [
+            start,
+            CGPoint(x: end.x, y: start.y),
+            end
+        ]
+        let verticalFirst = [
+            start,
+            CGPoint(x: start.x, y: end.y),
+            end
+        ]
+
+        return pathLength(horizontalFirst) <= pathLength(verticalFirst) ? horizontalFirst : verticalFirst
+    }
+
+    func wirePort(from component: SKShapeNode, toward otherComponent: SKShapeNode) -> CGPoint {
+        guard let type = componentType(for: component) else { return snapToGrid(component.position) }
+
+        let halfWidth = type.size.width / 2
+        let halfHeight = type.size.height / 2
+        let dx = otherComponent.position.x - component.position.x
+        let dy = otherComponent.position.y - component.position.y
+        let rawPort: CGPoint
+
+        if abs(dx) >= abs(dy) {
+            rawPort = CGPoint(
+                x: component.position.x + (dx >= 0 ? halfWidth : -halfWidth),
+                y: component.position.y
+            )
+        } else {
+            rawPort = CGPoint(
+                x: component.position.x,
+                y: component.position.y + (dy >= 0 ? halfHeight : -halfHeight)
+            )
+        }
+
+        return snapToGrid(rawPort)
+    }
+
+    func pathLength(_ points: [CGPoint]) -> CGFloat {
+        guard points.count > 1 else { return 0 }
+        var total: CGFloat = 0
+        for index in 1..<points.count {
+            total += abs(points[index].x - points[index - 1].x)
+            total += abs(points[index].y - points[index - 1].y)
+        }
+        return total
     }
 
     func updateAllWires() {
@@ -571,7 +640,9 @@ class GameScene: SKScene, NSTextFieldDelegate {
         }
         else if button2.state == .on && isDragging {
             // Drag the chosen block dynamically across the coordinates
-            selectedNode?.position = snapToGrid(location)
+            if let selectedNode = selectedNode {
+                selectedNode.position = snapComponentPosition(location, for: selectedNode)
+            }
             updateAllWires()
         }
     }

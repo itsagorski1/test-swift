@@ -14,9 +14,9 @@
             filePath = "test/GameScene.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "310"
-            endingLineNumber = "310"
-            landmarkName = "didMove(to:)"
+            startingLineNumber = "309"
+            endingLineNumber = "309"
+            landmarkName = "createComponent(_:at:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
